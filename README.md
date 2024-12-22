@@ -4,10 +4,10 @@ Notes about the structure of land surface models (LSMs).
 
 ## Soil moisture constraint schemes
 
-| Model names | TODO |
-| ----------- | ---- |
-| Noah-MP     | ❓   |
-| CABLE       | ❓   |
+| Model names | Type | TODO |
+| ----------- | ---- | ---- |
+| Noah-MP     | LSM  | ❓   |
+| CABLE       |      | ❓   |
 
 ## References
 
