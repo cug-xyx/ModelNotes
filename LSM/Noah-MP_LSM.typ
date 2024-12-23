@@ -41,127 +41,145 @@
 
 = Noah-MP陆面模式
 
-== Tiles划分
+== 子网格划分
 
-Noah-MP引入“半瓦片”子网格方案来表征地表异质性。考虑间隙概率，计算整个网格的短波辐射传输，而长波辐射、潜热、显热和地表热通量则分别计算两个网格：
-$F_"veg"$：植被覆盖面积分数、$1 - F_"veg"$：裸地面积分数。
-
-
-
-
-
-根据GLCC（Global Land Cover Characteristics，）数据，将每个网格的植被划分为高植被与矮植被。每个网格有四个变量，
-T_H: 占优的高植被类型、T_L: 占优的矮植被类型、A_H: 高植被覆盖比例、A_L: 矮植被覆盖比例。
-GLCC数据说明见https://www.usgs.gov/centers/eros/science/usgs-eros-archive-land-cover-products-global-land-cover-characterization-glcc，下载地址见https://earthexplorer.usgs.gov/。
+Noah-MP引入“半瓦片”子网格方案来表征地表异质性。考虑间隙概率，首先假设植被均匀分布在网格内，使用改进的双流近似计来算计算整个网格的短波辐射传输。对于长波辐射、潜热、显热和地表热通量则分别计算两个网格：$F_"veg"$：植被覆盖面积分数、$1 - F_"veg"$：裸地面积分数。
 
 #figure(
-  image("./images/Noah-MP_semitile.png", width: 100%),
+  image("../images/Noah-MP_semitile.png", width: 100%),
   caption: [Noah-MP的“半瓦片”子网格方案示意图]
-) <fig_LSM_Noah-MP>
-
-如下表，ERA5L中将每个网格进一步划分为有8种Tiles。
-// #line(length: 100%, stroke: 1pt + rgb("CCCCCC"))
-
-#figure(
-  caption: [ERA5L中8种Tiles],
-  table(
-    columns: (1.5cm, 4cm, 4cm, 5.7cm),
-    // inset: 10pt,
-    align: (horizon, horizon, horizon, left),
-    table.header( [编号], [类型], [积雪], [比例]),
-    [1], [水体中的水     ], [水体     ], [$1 - c_i$],
-    [2], [水体中的冰$c_i$], [水体     ], [$c_i$], 
-    [3], [冠层水体       ], [无积雪部分], [$(1 - c_"sn") c_1$], 
-    [4], [矮植被        ], [无积雪部分], [$(1 - c_"sn")(1 - c_1) c_L$], 
-    [5], [矮植被和裸土   ], [积雪覆盖 ], [#h(2em) $c_"sn" (1 - c_H)$], 
-    [6], [高植被        ], [无积雪部分], [$(1 - c_"sn")(1 - c_1) c_H$], 
-    [7], [高植被        ], [积雪覆盖  ], [#h(2em) $c_"sn" c_H$], 
-    [8], [裸土          ], [无积雪部分], [$(1 - c_"sn")(1 - c_1) (1 - c_H - c_L)$], 
-  )
-)
-其中，$c_1$：冠层截留的比例；$c_"sn"$：雪的比例；$c_i$：冰的比例。
-高植被、矮植被、裸地的覆盖比例为：$c_H = A_H c_"veg"(T_H)$、
-$c_L = A_L c_"veg"(T_L)$、$c_B = 1 - c_H - c_L$。
-
-
-
+) <fig_Noah-MP_semitile>
 
 == 感热与潜热通量
 
-// #figure(
-//   image("../images/ERA5/阻力示意图.png", width: 70%),
-//   caption: [对热量和水汽的传递阻力示意图。从左到右分别为，裸土、植被、积雪与植被。]
-// ) <fig_>
+根据子网格划分方案，感热与潜热通量的计算公式如下：
 
-$ E_i = rho_a / (r_a + r_c) [q_L - q_"sat"(T_i)] $
+$ H = (1 - F_"veg") H_"g,b" + F_"veg" (H_v + H_"g,v") $
 
-- 下标L代表lowest atmospheric model level，可理解为参考高度；
-- 下标i代表the high or low vegetation tiles。
+$ "LE" = (1 - F_"veg") "LE"_"g,b" + F_"veg" ("LE"_v + "LE"_"g,v") $
+
+- 下标$"g,v"$代表植被覆盖的地表部分；
+- 下标$"v"$代表植被覆盖的植被部分；
+- 下标$"g,b"$代表裸地覆盖的地表部分；
+
+*每个感热部分的元素：*
+
+$ H_"g,b" = rho C_p (T_"g,b" - T_"air")/ r_"ah" $
+
+$ H_"g,v" = rho C_p (T_"g,v" - T_"ac")/ r_"ah,g" $
+
+$ H_"v" = 2 (L_e + S_e) rho C_p (T_"v" - T_"ac")/ r_"b" $
+
+- $rho$：空气密度（kg m-3）；
+- $C_p$：干空气比热容（=1005 J kg-1 K-1）；
+- $T_"air"$：参考高度的空气温度（K）；
+- $T_"ac"$：冠层空气温度（可以根据$H_"g,v" + H_v = rho C_p (T_"ac" - T_"air") / r_"ah"$得到）；
+- $r_"ah"$：空气动力学阻力 (= 1/($C_H U_"air"$))，其中$U_"air"$是参考高度处的风速，$C_H$是表面热交换系数；
+- $r_"ah,g"$：冠层下方的空气动力学阻力(Niu and Yang, 2004)；
+- $L_e$：有效LAI（$L_e = "LAI" times F_"veg"$）；
+- $S_e$：有效SAI（茎面积指数，Stem area index），（$S_e = "SAI" times F_"veg"$）；
+- $r_b$：每单位LAI的叶片边界层阻力(Brutsaert, 1982)
+
+*每个潜热部分的元素：*
+
+$ "LE"_"g,b" = (rho C_p) / gamma (e_"sat"(T_"g,b") h_g - e_"air") / (r_"aw" + r_"soil") $
+
+$ "LE"_"g,v" = (rho C_p) / gamma (e_"sat"(T_"g,v") h_g - e_"ac") / (r_"aw,g" + r_"soil") $
+
+$ "LE"_"v" = (rho C_p) / gamma (C_"e"^"w" + C_"t"^"w") (e_"sat" (T_v) - e_"ac") $
 
 == 冠层蒸腾阻力
 
-ERA5L采用的是Jarvis (1976)气孔导度公式：
+Noah-MP设计了两种气孔导度方案：
 
-$ r_c = r_"s,min" / "LAI" f_1(R_s) f_2 (overline(theta)) f_3 (D_a) $
+（1）Ball-Berry型：
 
-$ 1 / f_1(R_s) = min[1, (b R_s + c) / (a (b R_s + 1))] $ 
+$ "Ball-Barry p74" $
 
-$ 1 / f_2(overline(theta)) = cases(
-  0 "," overline(theta) < theta_"pwp",
-  (overline(theta) - theta_"pwp") / (theta_"cap" - theta_"pwp") "," theta_"pwp" <= overline(theta) <= theta_"cap",
-  1 "," overline(theta) > theta_"cap",
-)  $
+（2）Jarvis型：
 
-$ 1 / f_3(D_a) = exp ( - g_D D_a ) $
+$ "(Jarvis, 1976) p78" $
 
-其中，a = 0.81，b = 0.004 $W^(-1) m^2$， c = 0.05。$R_s$为入射短波辐射，$D_a$为空气饱和水气压差，$overline(theta)$是根系比例加权之后的，有效土壤含水量。
+*对于控制植被蒸腾的土壤水分限制因子$beta$，共设计了三种方案：*
 
-$ overline(theta) = sum_(k=1)^4 R_k max[f_"liq,k" theta_k, theta_"pwp"] $
+（1）基于土壤湿度（$theta$）的Noah型因子：
 
-其中$R_k$为根系分布比例，采用的Zeng et al. (1998)经验公式：
+$ beta = sum_(i=1)^(N_(root)) (Delta z_i) / z_(root) min(1.0, (theta_"liq,i" - theta_"wilt")/(theta_"ref" - theta_"wilt") ) $
 
-$ R(z) = 0.5 [ exp (- a_r z) + exp (- b_r z) ] $
-$ R_k = R(z_(k - 1/2)) - R(z_(k + 1/2)) $
+- $theta_"wilt"$：土壤凋萎点的土壤水分；
+- $theta_"ref"$：参考土壤水分（接近田间持水量）；
+- $N_"root"$：含有根系的土壤层总数；
+- $z_"root"$：根系深度；
 
+（2）CLM型因子(Oleon et al., 2004)，它是BATS因子(Yang and Dickinson, 1996)的改进版本：
 
-// #table-figure(
-//   [ERA5L植被参数。],
-//   "../images/ERA5/Table_veg_param.png", width: 80%
-// ) <tab_veg_param>
+$ beta = sum_(i=1)^(N_(root)) (Delta z_i) / z_(root) min(1.0, (psi_"wilt" - psi_i)/(psi_"wilt" - psi_"sat") ) $
 
-其中，$c_"veg"$为覆盖度，$r_"s,min"$为最低冠层阻力，$g_D$为冠层导度参数，$a_r$、$b_r$为植被根系分布参数。
+- $psi_i$：第i层的土壤基质势（$psi_i = psi_"sat" (theta_"liq,i" / theta_"sat")$）；
+- $psi_"sat"$：饱和基质势；
+- $psi_"wilt"$：凋萎基质势（=-150 m）与植被和土壤类型无关；
 
+（3）SSiB型因子(Xue et al., 1991)：
 
-// #table-figure(
-//   [每层土壤的植被根系分布比例。Vegetation Index对应的植被类型见表#[@tab_veg_param]。],
-//   "../images/ERA5/Table_root_ratio.png", width: 100%)
+$ beta = sum_(i=1)^(N_(root)) (Delta z_i) / z_(root) min(1.0, 1.0 - e^(-c_2 ln(psi_"wilt" / psi_i)) ) $
+
+- $c_2$：斜率因子，取值范围从作物的4.36到阔叶灌木的6.37（详见Xue et al. (1991)的表2）；
+
+#figure(
+  image("../images/Noah-MP_beta.png", width: 100%),
+  caption: [Noah-MP中控制气孔导度的不同土壤水分限制因子在不同土壤质地下随土壤水分的变化情况。]
+) <fig_Noah-MP_beta>
 
 == 土壤蒸发阻力
 
-$ r_"soil" = r_"soil,min" f_"2b"(f_"liq" theta_1) $
+*对于控制土壤蒸发的限制因子$alpha$，共设计了四种方案：*
 
-$ 1 / f_"2b"(f_"liq" theta_1) = 
-  (theta_1 - theta_"min") / (theta_"cap" - theta_"min") $
+（1）(Sakaguchi and Zeng, 2009)：
 
-$ theta_"min" = "veg" theta_"pwp" + (1 - "veg") theta_"res" $
+$ alpha = Z_"soil,dry" / D_"vap,red" $
+
+式中，干土厚度计算如下：
+
+$ Z_"soil,dry" = -Z_"soil" (1) times (e^([1-min(1,(W_"liq,soil" (1))/(theta_"soil,max" (1)))] ^ (R_"S,exp")) - 1) / (2.71828-1) $
+
+减少的蒸汽扩散率计算如下：
+
+$ D_"veg,red" = 2.2 times 10^(-5) times theta_"soil,max" (1) times theta_"soil,max" (1) times (1 - (theta_"soil,wilt" (1))/ (theta_"soil,max" (1))) ^ (2 + 3 / B_"exp" (1)) $
+
+- $theta_"soil,wilt"$：土壤凋萎点的土壤水分；
+- $B_"exp"$：土壤B指数参数；
+
+（2）Sallers (1992)：
+
+$ alpha = f_"snow" times 1.0 + (1 - f_"snow") times e ^ (8.25 - 4.225 times B_"evap") $
+
+式中，土壤蒸发因子（$B_"evap"$）计算如下：
+
+$ B_"evap" = max(0, (theta_"liq,soil" (1))/ (theta_"sat" (1)) ) $
+
+- $theta_"liq,soil"$：土壤液态含水量；
+- $theta_"sat"$：饱和土壤含水量；
+
+（3）adjusted Sallers 1992 for wet soil：
+
+$ alpha = f_"snow" times 1.0 + (1 - f_"snow") times e ^ (8.25 - 6.0 times B_"evap") $
+
+（4）Sakaguchi and Zeng, 2009 adjusted by $f_"snow"$ weighting：
+
+非雪部分的计算方式与方案（1）相同：
+
+$ alpha_0 = Z_"soil,dry" / D_"vap,red" $
+
+利用积雪权重进一步计算：
+
+$ alpha = 1 / (f_"snow" times 1 / alpha_"snow" + (1-f"snow") times 1 / (max(0.001,alpha_0))) $
+
+式中，$alpha_"snow"$为雪面对地面升华的阻力。
 
 == 土壤水运动
 
-早期的TESSEL采用的是Campbell（1974）土水势函数，而最新的版本采用的是Van Genuchten（1980）。
+// 早期的TESSEL采用的是Campbell（1974）土水势函数，而最新的版本采用的是Van Genuchten（1980）。
 
-#beamer-block[土壤质地数据来源于：FAO (FAO, 2003)。]
+// #beamer-block[土壤质地数据来源于：FAO (FAO, 2003)。]
 
-// #table-figure(
-//   [Values for the volumetric soil moisture in Van Genuchten and Clapp-Hornberger (CH, loamy; bottom row).],
-//   "../images/ERA5/Table_soil_pot_param.png", width: 80%)
-
-// #table-figure(
-//   [Values for the volumetric soil moisture in Van Genuchten and Clapp-Hornberger (CH, loamy; bottom row).],
-//   "../images/ERA5/Table_soil_pot_param.png", width: 80%)
-
-// #figure(
-//   image("../images/ERA5/Figure_soil_hydra.png", width: 90%),
-//   caption: [土壤水力属性。每条线有三个"+"，它们分别代表$theta_"sat"$、$theta_"fc"$、$theta_"pwp"$。]
-// ) <fig_>
-
-上图可以看到，在土壤含水量低于$theta_"pwp"$之后，$"CH"$的扩散系数和水力传导系数是被高估的。
+// 上图可以看到，在土壤含水量低于$theta_"pwp"$之后，$"CH"$的扩散系数和水力传导系数是被高估的。
