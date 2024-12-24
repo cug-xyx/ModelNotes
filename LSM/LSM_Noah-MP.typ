@@ -46,7 +46,7 @@
 Noah-MP引入“半瓦片”子网格方案来表征地表异质性。考虑间隙概率，首先假设植被均匀分布在网格内，使用改进的双流近似计来算计算整个网格的短波辐射传输。对于长波辐射、潜热、显热和地表热通量则分别计算两个网格：$F_"veg"$：植被覆盖面积分数、$1 - F_"veg"$：裸地面积分数。
 
 #figure(
-  image("../images/Noah-MP_semitile.png", width: 100%),
+  image("../images/LSM_Noah-MP_semitile.png", width: 100%),
   caption: [Noah-MP的“半瓦片”子网格方案示意图]
 ) <fig_Noah-MP_semitile>
 
@@ -126,7 +126,7 @@ $ beta = sum_(i=1)^(N_(root)) (Delta z_i) / z_(root) min(1.0, 1.0 - e^(-c_2 ln(p
 - $c_2$：斜率因子，取值范围从作物的4.36到阔叶灌木的6.37（详见Xue et al. (1991)的表2）；
 
 #figure(
-  image("../images/Noah-MP_beta.png", width: 100%),
+  image("../images/LSM_Noah-MP_beta.png", width: 100%),
   caption: [Noah-MP中控制气孔导度的不同土壤水分限制因子在不同土壤质地下随土壤水分的变化情况。]
 ) <fig_Noah-MP_beta>
 
