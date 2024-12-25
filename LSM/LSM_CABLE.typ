@@ -43,7 +43,7 @@
 
 == CABLE版本更新过程
 
-- 2006,CABLEv1（https://www.cmar.csiro.au/e-print/open/kowalczykea_2006a.pdf）
+- 2006,CABLEv1.0（https://www.cmar.csiro.au/e-print/open/kowalczykea_2006a.pdf）
   - CABLEv1的流程如图#[@fig_CABLE_diagram]。
 - 2011,CABLEv1.4b（https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2010JG001385）
 - 2018,CABLE-POP（https://gmd.copernicus.org/articles/11/2995/2018/#abstract）
@@ -51,7 +51,7 @@
   - 相比于CABLEv1.4b，CABLEv2.3.4的主要更新如下：
     1. 新的*气孔导度方案*，其中明确参数化了不同植被功能类型PFT的植物水分利用方案；
     2. 地下水模型和亚网格尺度的径流参数化方案；
-    3. 一种基于空隙尺度模型的*新土壤蒸发公式*。
+    3. 一种基于孔隙尺度模型的新*土壤蒸发公式*。
 
 #figure(
   image("../images/LSM_CABLE_diagram.png", width: 50%),
@@ -145,6 +145,8 @@ $ G = phi_1 + phi_2 cos(Theta) $
 
 == 感热与潜热通量
 
+=== CABLEv1.0
+
 在有冠层的地表系统中，总地表通量是从土壤（s）到冠层的通量与从冠层（c）到大气的通量之和：
 
 $ H_T = H_s + H_c $
@@ -191,7 +193,24 @@ $ 1/G_c = 1/G_a + 1/(b_"bc" G_b) + 1/(b_"sc" G_"st") $
 
 $ G_a = u_* / r_"tc" $
 
-式中，*$r_"tc"$为单个植被层的总阻力*。$G_r$为辐射导度，参见Wang and Leuning(1998)。
+式中，$r_"tc"$为单个植被层的总阻力。$G_r$为辐射导度，参见Wang and Leuning(1998)。
+
+=== CABLEv1.4
+
+根据(Wang et al., 2011)，CABLEv1.4计算冠层通量、土壤通量、冠层光合作用与每个时间步长的冠层水储量。根据冠层水储量划分干/湿冠层。
+
+冠层的潜热通量和感热通量计算为干、湿冠层通量的线性组合，即：
+
+$ lambda E_c = (1 - f_"wet") lambda E_"dry" + f_"wet" lambda E_"wet" $
+
+- 下标dry为干冠层
+- 下标wet为湿冠层
+
+冠层湿润度$f_"wet"$的计算方式如下：
+
+$ f_"wet" = (0.8 W_c) / (W_"cmax") $
+
+式中，$W_c$为冠层水储量。$W_"cmax"$为冠层最大水储量，按0.1升计算。
 
 == 冠层蒸腾阻力
 
@@ -199,7 +218,13 @@ $ G_a = u_* / r_"tc" $
 
 $ G_"st" = G_0 / b_"sc" + (a f_w A_c) / (C_s (1 + D_s / D_"s0")) $
 
-$G_0$是当叶片净光合作用为零时叶片对H2O的气孔导度。$D_s$为叶表面的水汽压差。$f_w$为描述土壤可以为植物提供的可用水量的经验系数，$a$和$D_"s0"$为经验常数（该方程适用于$a$、$D_"s0"$和$G_0$不同值的C3和C4植物）。
+$G_0$是当叶片净光合作用为零时叶片对H2O的气孔导度。$D_s$为叶表面的水汽压差。*$f_w$为描述土壤可以为植物提供的可用水量的经验系数，根据(Wang et al., 2011)，其计算方式如下*：
+
+$ f_w = beta_c sum_m f_"root,m" (theta_m - theta_"wilt") / (theta_"fc" - theta_"wilt") $
+
+式中，$beta_c$为模型参数，$f_"root,m"$为根系在土壤层m中所占比例，$theta_m$为土壤层m中的土壤含水量，$theta_"wilt"$和$theta_"fc"$为土壤层m的凋萎点土壤含水量和田间持水量。
+
+$a$和$D_"s0"$为经验常数（该方程适用于$a$、$D_"s0"$和$G_0$不同值的C3和C4植物）。
 
 光合作用的气体扩散部分描述了从气孔到叶边界层扩散提供的的CO2：
 
@@ -209,16 +234,61 @@ $ A_c = b_"sc" G_"st" (C_s - C) = G_c (C_a - C) $
 
 == 土壤蒸发阻力
 
+=== CABLEv1.0
+
 土壤潜热和感热通量由整体传递关系得到：
 
 $ H_s = rho c_p (T_s - T_"ref") \/ r_s $
 
 $ lambda E_"sp" = lambda rho (q^*(T_s) - q_"ref") \/ r_s $
 
-式中，$T_s$为土壤表面温度，*$r_s$为从土壤到冠层的空气动力学阻力*。$E_"sp"$为土壤潜在蒸散发。Penman-Monteith组合方程(Garratt,1992)为模型中的潜在蒸散发提供了另一种方案。在这种方案中，潜在蒸散发划分为能量和空气动力学对蒸发的贡献：
+式中，$T_s$为土壤表面温度，$r_s$为从土壤到冠层的空气动力学阻力。$E_"sp"$为土壤潜在蒸散发。Penman-Monteith组合方程(Garratt,1992)为模型中的潜在蒸散发提供了另一种方案。在这种方案中，潜在蒸散发划分为能量和空气动力学对蒸发的贡献：
 
-$$
+$ lambda E_"sl" = s / (s + gamma) ("Rn"_s - G_s) + gamma / (s + gamma) rho lambda D \/ r_s $
+
+对于湿表面，$E_"sl" = E_"sp"$，对于干表面$E_"sl" < E_"sp"$，参见Kowalczyk et al. (1991)。实际土壤蒸发为土壤潜在蒸散发的分数：
+
+$ lambda E_s = x lambda E_"sp" "or" lambda E_s = x lambda E_"sl" $
+
+要计算$H_s$和$E_s$，需要了解土壤表面温度和湿度；我们使用上一时间得到的值。当前时间表面温度的确定基于表面能量平衡，可以描述为：
+
+$ "Rn"_s - G_s = H_s + lambda E_s $
+
+土壤表面的净辐射由短波和长波辐射的组合而成，即：
+
+$ "Rn"_s = (1 - alpha_s) S↓ + L↓ - epsilon_s L↑ $
+
+式中，$S↓$为入射短波辐射，$L↓$为入射长波辐射，$L↑ = sigma T_s^4$为土壤表面向上的长波辐射，$alpha_s$为地表反照率，$epsilon_s$为地表发射率。土壤热通量$G_s$由土壤温度扩散方程计算，并被作为土壤上边界条件。
+
+=== CABLEv1.4
+
+根据(Wang et al., 2011)，土壤潜热通量、感热通量和土壤热通量的计算如下：
+
+$
+E_s = min(
+  (1000 Delta z_1(theta_1 - theta_"wilt"))/(Delta t),
+  w_s (s / (lambda(s + gamma)) ("Rn"_s - G_s) + gamma / (s + gamma) rho lambda D \/ r_s)
+)
+$
+
+$ H_s = c_p rho_a (T_s - T_"ref") / r_s $
+
+式中，*$w_s$为土壤湿度因子，其计算方式如下*：
+
+$ w_s = beta_s (theta_1 - theta_"wilt") / (theta_"fc" - theta_"wilt") $
+
+式中，$beta_s$为模型经验系数，$theta_1$为表层土壤含水量。
+
+对于湿冠层，冠层水储量计算如下：
+
+$ (d W_c) / (d t) = P_1 - f_"wet" E_"wet" + min(0,(1 - f_"wet")E_"dry") $
+
+式中，$min(0,(1 - f_"wet")E_"dry")$为冠层表面形成的露水量，$P_1$表示冠层对大气降水的街流量，其计算如下：
+
+$ P_1 = min(P,(W_"cmax" - W_c)\/Delta t) $
+
+式中，$P$为降水（$"mm"/Delta t$），$Delta t$为时间步长。
 
 == 土壤水运动
 
-CABLE使用多层土壤模型,并采用Richards方程来求解土壤湿度，采用热传导方程来求解土壤温度。
+CABLE使用六层土壤模型,并采用Richards方程来求解土壤湿度，采用热传导方程来求解土壤温度。
