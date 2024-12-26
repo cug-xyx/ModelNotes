@@ -195,7 +195,7 @@ $ G_a = u_* / r_"tc" $
 
 式中，$r_"tc"$为单个植被层的总阻力。$G_r$为辐射导度，参见Wang and Leuning(1998)。
 
-=== CABLEv1.4
+=== CABLEv1.4b
 
 根据(Wang et al., 2011)，CABLEv1.4计算冠层通量、土壤通量、冠层光合作用与每个时间步长的冠层水储量。根据冠层水储量划分干/湿冠层。
 
@@ -212,25 +212,59 @@ $ f_"wet" = (0.8 W_c) / (W_"cmax") $
 
 式中，$W_c$为冠层水储量。$W_"cmax"$为冠层最大水储量，按0.1升计算。
 
+对于湿冠层，冠层水储量计算如下：
+
+$ (d W_c) / (d t) = P_1 - f_"wet" E_"wet" + min(0,(1 - f_"wet")E_"dry") $
+
+式中，$min(0,(1 - f_"wet")E_"dry")$为冠层表面形成的露水量，$P_1$表示冠层对大气降水的街流量，其计算如下：
+
+$ P_1 = min(P,(W_"cmax" - W_c)\/Delta t) $
+
+式中，$P$为降水（$"mm"/Delta t$），$Delta t$为时间步长。
+
 == 冠层蒸腾阻力
+
+=== CABLEv1.0
 
 气孔导度采用Ball-Berry-Leuning模型：
 
 $ G_"st" = G_0 / b_"sc" + (a f_w A_c) / (C_s (1 + D_s / D_"s0")) $
 
-$G_0$是当叶片净光合作用为零时叶片对H2O的气孔导度。$D_s$为叶表面的水汽压差。*$f_w$为描述土壤可以为植物提供的可用水量的经验系数，根据(Wang et al., 2011)，其计算方式如下*：
-
-$ f_w = beta_c sum_m f_"root,m" (theta_m - theta_"wilt") / (theta_"fc" - theta_"wilt") $
-
-式中，$beta_c$为模型参数，$f_"root,m"$为根系在土壤层m中所占比例，$theta_m$为土壤层m中的土壤含水量，$theta_"wilt"$和$theta_"fc"$为土壤层m的凋萎点土壤含水量和田间持水量。
-
-$a$和$D_"s0"$为经验常数（该方程适用于$a$、$D_"s0"$和$G_0$不同值的C3和C4植物）。
+式中，$G_0$是当叶片净光合作用为零时叶片对H2O的气孔导度。$D_s$为叶表面的水汽压差。*$f_w$为描述土壤可以为植物提供的可用水量的经验系数*。$a$和$D_"s0"$为经验常数（该方程适用于$a$、$D_"s0"$和$G_0$不同值的C3和C4植物）。
 
 光合作用的气体扩散部分描述了从气孔到叶边界层扩散提供的的CO2：
 
 $ A_c = b_"sc" G_"st" (C_s - C) = G_c (C_a - C) $
 
 式中，$A_c$为净光合速率，$C_s$为叶表面的CO2浓度，$C$为叶片的胞间CO2浓度。
+
+=== CABLEv1.4b
+
+根据(Wang et al., 2011)：
+
+$ G_s = G_0 + (a_1 f_w A_c) / ((C_s - Gamma) (1 + D_s / D_"s0")) $
+
+式中，$Gamma$为光合作用的CO2补偿点。$f_w$为土壤水分限制因子，其计算如下：
+
+$ f_w = beta_c sum_m f_"root,m" (theta_m - theta_"wilt") / (theta_"fc" - theta_"wilt") $
+
+式中，$beta_c$为模型参数，$f_"root,m"$为根系在土壤层m中所占比例，$theta_m$为土壤层m中的土壤含水量，$theta_"wilt"$和$theta_"fc"$为土壤层m的凋萎点土壤含水量和田间持水量。
+
+=== CABLEv2.3.4
+
+$g_s$的默认方案按照Leuning(1995)计算如下：
+
+$ g_s = g_0 + (a_1 beta A) / ((C_s - Gamma) (1 + D / D_0)) $
+
+式中，$beta$为经验土壤水分限制因子：
+
+$ beta = (theta - theta_w) / (theta_"fc" - theta_w) $
+
+式中，$theta$为根区平均土壤含水量，$theta_w$和$theta_"fc"$分别为凋萎点土壤含水量和田间持水量。
+
+除此之外，还提供了Medlyn et al.(2011)的气孔导度模型，使用与上面相同的$beta$因子：
+
+$ g_s = g_0 + 1.6 (1 + (g_1 beta) / sqrt(D)) A / C_s $
 
 == 土壤蒸发阻力
 
@@ -260,7 +294,7 @@ $ "Rn"_s = (1 - alpha_s) S↓ + L↓ - epsilon_s L↑ $
 
 式中，$S↓$为入射短波辐射，$L↓$为入射长波辐射，$L↑ = sigma T_s^4$为土壤表面向上的长波辐射，$alpha_s$为地表反照率，$epsilon_s$为地表发射率。土壤热通量$G_s$由土壤温度扩散方程计算，并被作为土壤上边界条件。
 
-=== CABLEv1.4
+=== CABLEv1.4b
 
 根据(Wang et al., 2011)，土壤潜热通量、感热通量和土壤热通量的计算如下：
 
@@ -279,15 +313,19 @@ $ w_s = beta_s (theta_1 - theta_"wilt") / (theta_"fc" - theta_"wilt") $
 
 式中，$beta_s$为模型经验系数，$theta_1$为表层土壤含水量。
 
-对于湿冠层，冠层水储量计算如下：
+=== CABLEv2.3.4
 
-$ (d W_c) / (d t) = P_1 - f_"wet" E_"wet" + min(0,(1 - f_"wet")E_"dry") $
+根据Decker et al.(2017)，土壤蒸发通过区分第一层土壤的饱和与非饱和层来反映亚网格尺度的土壤水分异质性：
 
-式中，$min(0,(1 - f_"wet")E_"dry")$为冠层表面形成的露水量，$P_1$表示冠层对大气降水的街流量，其计算如下：
+$ E_s = f_"sat" E_"sp" + (1 - f_"sat") beta_s E_"sp" $
 
-$ P_1 = min(P,(W_"cmax" - W_c)\/Delta t) $
+式中，$E_"sp"$表示限制前的土壤潜在蒸散发。$f_"sat"$为网格单元的饱和分数。土壤水分限制因子根据Sakaguchi and Zeng(2009)可以得到：
 
-式中，$P$为降水（$"mm"/Delta t$），$Delta t$为时间步长。
+$ beta_s = 0.25 (1 - cos(pi theta_"1,usat" / theta_"fc")) $
+
+式中，$theta_"1,usat"$为第一层非饱和部分的土壤含水量。第一层土壤的土壤含水量$theta_1$可以划分为饱和土壤水分和非饱和土壤水分：
+
+$ theta_1 = f_"sat" theta_"1,sat" + (1 - f_"sat") theta_"1,usat" $
 
 == 土壤水运动
 

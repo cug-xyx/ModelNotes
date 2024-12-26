@@ -7,7 +7,7 @@ Notes about the land surface model (LSM) structures.
 | Model names | Type | Documents                                                                                        | TODO |
 | ----------- | ---- | ------------------------------------------------------------------------------------------------ | ---- |
 | Noah-MP     | LSM  | [Homepage](https://ral.ucar.edu/model/noah-multiparameterization-land-surface-model-noah-mp-lsm) | ✅   |
-| CABLE       | LSM  | [Document](https://cable.readthedocs.io/en/latest/)                                              | ❓   |
+| CABLE       | LSM  | [Document](https://cable.readthedocs.io/en/latest/)                                              | ✅   |
 
 ## References
 

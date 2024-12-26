@@ -47,7 +47,7 @@ Noah-MP引入“半瓦片”子网格方案来表征地表异质性。考虑间�
 
 #figure(
   image("../images/LSM_Noah-MP_semitile.png", width: 100%),
-  caption: [Noah-MP的“半瓦片”子网格方案示意图]
+  caption: [Noah-MP的“半瓦片”子网格方案示意图。]
 ) <fig_Noah-MP_semitile>
 
 == 感热与潜热通量
@@ -94,11 +94,40 @@ Noah-MP设计了两种气孔导度方案：
 
 （1）Ball-Berry型：
 
-$ "Ball-Barry p74" $
+*限制植被蒸腾的土壤水分限制因子$beta$作用在最大羧化速率上*：
+
+$ V_"C,max" = V_"C,max,25" f_"n,leaf" beta V_"C,max,10,chg"^((T_C-25)/10) / (1 + e^([(-2.2 times 10^5 + 710 (T_C + 273.16))/(8.314 times (T_C + 273.16))])) $
+
+式中，$V_"C,max,25"$为25℃时的最大羧化速率，$f_"n,leaf"$为叶片氮分数，$V_"C,max,10,chg"$为温度每10℃时的最大羧化速率的变化量。
 
 （2）Jarvis型：
 
-$ "(Jarvis, 1976) p78" $
+*限制植被蒸腾的土壤水分限制因子$beta$作用在总的气孔导度阻力上*：
+
+$ R_"stomata" = R_"s,min" / (F_"rs,solar" times F_"rs,temp" times F_"rs,vpd" times beta) $
+
+式中，$R_"s,min"$为气孔导度阻力的最小值，$F_"rs,solar"$为入射太阳辐射对气孔导度阻力的贡献因子。$F_"rs,temp"$为空气温度对气孔导度阻力的贡献因子。$F_"rs,vpd"$为饱和水汽压差对气孔导度阻力的贡献因子。
+
+$ F_"rs,solar" = max(0.0001, ((2 times S_"par")/(F_"rad,str") + R_"S,min" / R_"S,max") / (1 + (2 times S_"par")/(F_"rad,str"))) $
+
+- $S_"par"$：光和有效辐射；
+- $F_"rad,str"$：辐射限制因子；
+- $R_"S,min"$：叶片气孔导度阻力的最小值；
+- $R_"S,max"$：叶片气孔导度阻力的最大值。
+
+$ F_"rs,temp" = max(0.0001, 1 - 0.0016 times (T_"opt" - T_"v")^2) $
+
+- $T_"opt"$：植被蒸腾的最适空气温度；
+- $T_"v"$：植被冠层温度。
+
+$ F_"rs,vpd" = max(0.01, 1/(1+F_"vpd,str"times max(0, w_"can,air,sat" - w_"can,air"))) $
+
+- $F_"vpd,str"$：饱和水汽压差限制因子；
+- $w_"can,air,sat"$：饱和的混合比。
+
+$ w_"can,air" = q_"can,air" / (1 - q_"can,air") $
+
+- $q_"can,air"$：冠层空气水汽压。
 
 *对于控制植被蒸腾的土壤水分限制因子$beta$，共设计了三种方案：*
 
@@ -131,6 +160,20 @@ $ beta = sum_(i=1)^(N_(root)) (Delta z_i) / z_(root) min(1.0, 1.0 - e^(-c_2 ln(p
 ) <fig_Noah-MP_beta>
 
 == 土壤蒸发阻力
+
+地表的潜热通量，即为土壤蒸发，计算如下：
+
+$ H_"L,bare" = C_"LH" times (e_"s,Tg" times "RH" - e_"air") $
+
+式中，$e_"air"$为地表空气水汽压，$"RH"$为地表相对湿度。$C_"LH"$为地表的潜热系数：
+
+$ C_"LH" = (rho_"air" times C_"p,air") / (gamma_"grd" times (R_"h,bare" + alpha)) $
+
+其中，$R_"h,bare"$为地表的空气动力学热阻力：
+
+$ R_"h,bare" = max(1,1/(C_"m,bare" times U_"ref")) $
+
+式中，$C_"m,bare"$为动量阻力系数。$U_"ref"$为参考高度的风速。*$alpha$为限制土壤蒸发的限制因子*。
 
 *对于控制土壤蒸发的限制因子$alpha$，共设计了四种方案：*
 
@@ -172,14 +215,10 @@ $ alpha_0 = Z_"soil,dry" / D_"vap,red" $
 
 利用积雪权重进一步计算：
 
-$ alpha = 1 / (f_"snow" times 1 / alpha_"snow" + (1-f"snow") times 1 / (max(0.001,alpha_0))) $
+$ alpha = 1 / (f_"snow" times 1 / alpha_"snow" + (1-f_"snow") times 1 / (max(0.001,alpha_0))) $
 
 式中，$alpha_"snow"$为雪面对地面升华的阻力。
 
 == 土壤水运动
 
-// 早期的TESSEL采用的是Campbell（1974）土水势函数，而最新的版本采用的是Van Genuchten（1980）。
-
-// #beamer-block[土壤质地数据来源于：FAO (FAO, 2003)。]
-
-// 上图可以看到，在土壤含水量低于$theta_"pwp"$之后，$"CH"$的扩散系数和水力传导系数是被高估的。
+Noah-MP采用一维Richards方程模拟土壤水扩散。
