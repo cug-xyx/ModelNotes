@@ -4,10 +4,14 @@ Notes about the land surface model (LSM) structures.
 
 ## Soil moisture constraint schemes
 
+- `LSM`: Land Surface Model
+- `DM`: Diagnosed model
+
 | Model names | Type | Documents                                                                                        | TODO |
 | ----------- | ---- | ------------------------------------------------------------------------------------------------ | ---- |
 | Noah-MP     | LSM  | [Homepage](https://ral.ucar.edu/model/noah-multiparameterization-land-surface-model-noah-mp-lsm) | ✅   |
 | CABLE       | LSM  | [Document](https://cable.readthedocs.io/en/latest/)                                              | ✅   |
+| CMRSET      | DM   |                                                                                                  | ✅   |
 
 ## References
 
